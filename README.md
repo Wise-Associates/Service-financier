@@ -29,7 +29,9 @@ python -m pip install -e .
 | Lint et format | `python -m ruff check .` puis `python -m ruff format --check .` |
 | Typage strict | `python -m mypy` |
 | Démonstration sur une banque fictive | `python exemples/demo_banque_fictive.py` (écrit `sortie/rapport_irrbb.md` et `sortie/journal_controles.csv`) |
-| Interface web locale (banque fictive) | `python exemples/interface_web.py` puis ouvrir <http://127.0.0.1:8000> (`--port` pour changer de port) |
+| Interface web (banque fictive) | `cd web`, `npm ci`, `npm run dev` puis ouvrir <http://127.0.0.1:3000> |
+| Vérifications de l'interface | `cd web` puis `npm run lint`, `npm run typecheck`, `npm test`, `npm run build` |
+| Régénérer la référence du moteur TypeScript | `python exemples/reference_web.py` (après toute modification de formule) |
 
 La CI GitHub Actions (`.github/workflows/ci.yml`) exécute ces commandes sous Linux et Windows.
 
@@ -49,16 +51,26 @@ La CI GitHub Actions (`.github/workflows/ci.yml`) exécute ces commandes sous Li
 
 La correspondance formule → fonction → test est dans [`docs/formules.md`](docs/formules.md).
 
-## Interface web
+## Interface web (Next.js)
 
-`python exemples/interface_web.py` démarre une page locale (http://127.0.0.1:8000) qui relance le calcul
-de la banque fictive avec vos paramètres : fonds propres Tier 1, seuils SOT ΔEVE et ΔNII, pondération
-des gains, marges commerciales incluses ou non. Elle affiche ΔEVE et ΔNII par choc et par devise, le
-ΔEVE standardisé, le test des valeurs aberrantes et le statut des contrôles C01 à C09 avec le journal.
+`web/` contient une application Next.js qui relance le calcul de la banque fictive avec vos
+paramètres (fonds propres Tier 1, seuils SOT ΔEVE et ΔNII, pondération des gains, marges commerciales)
+et affiche ΔEVE et ΔNII par choc et par devise, le ΔEVE standardisé, le test des valeurs aberrantes
+et le statut des contrôles C01 à C09 avec le journal.
 
-Bibliothèque standard uniquement, aucun JavaScript, écoute sur 127.0.0.1 seulement : c'est un outil de
-poste de travail, pas un service à exposer (ADR [0003](docs/adr/0003-interface-web-locale-sans-dependance.md)).
-Le calcul vient de `executer` dans `exemples/demo_banque_fictive.py`, partagé avec la démonstration.
+Prérequis : Node.js 22.12 ou plus récent.
+
+```bash
+cd web
+npm ci
+npm run dev        # http://127.0.0.1:3000 ; production : npm run build puis npm start
+```
+
+Le calcul tourne côté serveur dans `web/src/moteur`, un **portage TypeScript** du moteur Python,
+qui reste la référence (ADR [0004](docs/adr/0004-interface-nextjs-moteur-typescript.md)). Un test
+compare les deux moteurs sur la banque fictive : **toute modification de formule doit être faite
+dans `src/irrbb` et dans `web/src/moteur`**, puis la référence régénérée avec
+`python exemples/reference_web.py`.
 
 ## Exemple minimal
 

@@ -1,6 +1,6 @@
 # 0003 — Interface web locale, sans nouvelle dépendance
 
-Date : 2026-10-27 · Statut : accepté
+Date : 2026-10-27 · Statut : remplacé par [0004](0004-interface-nextjs-moteur-typescript.md)
 
 ## Contexte
 
