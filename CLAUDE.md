@@ -17,6 +17,8 @@ de modifier le code.
 - Toute limitation connue va dans `docs/limites.md` avec son atténuation.
 - Données fictives uniquement dans les tests et les exemples.
 - Seule dépendance d'exécution : numpy (version figée). Pas de nouvelle dépendance sans ADR.
+- L'interface web (`exemples/interface_web.py`) n'a aucune formule : elle appelle
+  `demo_banque_fictive.executer`. Bibliothèque standard seulement, pas de JavaScript (ADR 0003).
 
 ## Vérifications avant de livrer
 
