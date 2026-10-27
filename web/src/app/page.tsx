@@ -31,10 +31,10 @@ function Alerte({ titre, messages }: { titre: string; messages: readonly string[
 }
 
 function Resultat({ r }: { r: Resultats }) {
-  const devises = [...new Set(r.eve.listeScenarios.flatMap((s) => Object.keys(r.eve.decomposition(s))))].sort();
+  const devises = [...new Set(r.eve.listeScenarios.flatMap((s) => [...r.eve.decomposition(s).keys()]))].sort();
   const std: LigneMesure[] = Object.entries(r.std.deltaParScenarioDevise).map(([s, d]) => ({
     scenario: s,
-    parDevise: d,
+    parDevise: new Map(Object.entries(d)),
     total: r.std.deltaAgrege(s),
   }));
   const marges = r.versions["inclure_marge"] ? "incluses" : "exclues";
@@ -42,18 +42,21 @@ function Resultat({ r }: { r: Resultats }) {
     <>
       <Synthese r={r} />
       <TableauMesure
+        id="titre-eve"
         titre="ΔEVE par choc"
         intro={`Revalorisation complète, marges commerciales ${marges}. Δ = scénario − base : un Δ négatif est une perte. EVE de base : ${nombre(r.eve.total())} M.`}
         lignes={lignes(r.eve)}
         devises={devises}
       />
       <TableauMesure
+        id="titre-nii"
         titre="ΔNII à 12 mois, bilan constant"
         intro={`NII de base : ${nombre(r.nii.total())} M.`}
         lignes={lignes(r.nii)}
         devises={devises}
       />
       <TableauMesure
+        id="titre-standardise"
         titre="ΔEVE standardisé (test des valeurs aberrantes)"
         intro="Le total agrège les devises en pondérant les gains selon le paramètre ci-dessus."
         lignes={std}
@@ -93,8 +96,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<Par
         </div>
       </header>
       <main className="conteneur">
-        <Formulaire saisie={saisie} />
+        {/* L'alerte précède le formulaire pour être visible sans défiler sur mobile. */}
         {saisie.erreurs.length > 0 ? <Alerte titre="Le calcul n'a pas été lancé." messages={saisie.erreurs} /> : null}
+        <Formulaire saisie={saisie} />
         {resultat instanceof Error ? (
           <Alerte titre="Le moteur a refusé le calcul." messages={[resultat.message]} />
         ) : resultat?.statut === "bloque" ? (

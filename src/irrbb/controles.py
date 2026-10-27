@@ -1,4 +1,4 @@
-"""Contrôles C01 à C10 et journal des anomalies (PDF p. 3, 4, 7 et 8).
+"""Contrôles C01 à C09 et journal des anomalies (PDF p. 3, 4, 7 et 8). C10 (archivage) : voir limites.
 
 Chaque contrôle produit au moins une entrée de journal : une anomalie avec sa sévérité, ou
 une entrée « Information » quand il est passé (preuve pour la piste d'audit). L'horodatage

@@ -145,4 +145,11 @@ describe("contrôles", () => {
       ].sort(),
     );
   });
+
+  it("catégorie « toString » : anomalie bloquante, pas de plantage", () => {
+    const j = controleCompletude([{ identifiant: "X", categorie: "toString" }], CHAMPS, CTX);
+    expect(j.map((e) => e.idRegle)).toEqual(["C01-CATEGORIE"]);
+    const r = controleRapprochement({ constructor: 5 }, {}, CTX, 1);
+    expect(severites(r)).toEqual([Severite.BLOQUANTE]);
+  });
 });

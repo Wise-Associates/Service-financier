@@ -1,5 +1,5 @@
 /**
- * Contrôles C01 à C10 et journal des anomalies (PDF p. 3, 4, 7 et 8).
+ * Contrôles C01 à C09 et journal des anomalies (PDF p. 3, 4, 7 et 8). C10 (archivage) : voir limites.
  *
  * Chaque contrôle produit au moins une entrée de journal : une anomalie avec sa sévérité, ou une
  * entrée « Information » quand il est passé (preuve pour la piste d'audit). L'horodatage est
@@ -14,6 +14,7 @@
 
 import { createHash } from "node:crypto";
 
+import { propre } from "./cles";
 import { DepotNonEcheance, PretRemboursementAnticipe } from "./comportemental";
 import type { Marches } from "./mesures";
 import { CapFloor } from "./options";
@@ -114,7 +115,7 @@ export function controleCompletude(
   enregistrements.forEach((e, i) => {
     const ident = identifiantLigne(e, i);
     const cat = e["categorie"];
-    const champs = typeof cat === "string" ? champsParCategorie[cat] : undefined;
+    const champs = typeof cat === "string" ? propre(champsParCategorie, cat) : undefined;
     if (champs === undefined) {
       res.push(entree(ctx, "C01-CATEGORIE", ident, "catégorie connue", cat, Severite.BLOQUANTE));
       return;
@@ -244,8 +245,8 @@ export function controleRapprochement(
   const res: EntreeJournal[] = [];
   const cles = [...new Set([...Object.keys(totauxSource), ...Object.keys(totauxCalcul)])].sort();
   for (const cle of cles) {
-    const s = totauxSource[cle];
-    const c = totauxCalcul[cle];
+    const s = propre(totauxSource, cle);
+    const c = propre(totauxCalcul, cle);
     if (s === undefined || c === undefined) {
       res.push(entree(ctx, "C04-RAPPROCHEMENT", cle, s, c, Severite.BLOQUANTE));
       continue;
@@ -291,7 +292,7 @@ export function controleConservationFlux(
   for (const p of positions) {
     const attendu = encoursSigne(p);
     if (attendu === null) continue;
-    const m = marches[p.devise];
+    const m = propre(marches, p.devise);
     if (m === undefined) throw new Error(`${p.identifiant} : aucune courbe pour la devise ${p.devise}`);
     const observe = somme(p.flux(m, m, true).principal);
     if (Math.abs(observe - attendu) > toleranceRel * Math.abs(attendu)) {

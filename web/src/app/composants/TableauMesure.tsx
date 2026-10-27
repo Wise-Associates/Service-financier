@@ -2,7 +2,7 @@ import { libelleScenario, montantSigne } from "@/demo/presentation";
 
 export interface LigneMesure {
   readonly scenario: string;
-  readonly parDevise: Readonly<Record<string, number>>;
+  readonly parDevise: ReadonlyMap<string, number>;
   readonly total: number;
 }
 
@@ -25,23 +25,25 @@ function Barre({ valeur, echelle }: { valeur: number; echelle: number }) {
 }
 
 export function TableauMesure({
+  id,
   titre,
   intro,
   lignes,
   devises,
 }: {
+  /** Identifiant HTML du titre, explicite pour rester stable et unique. */
+  id: string;
   titre: string;
   intro: string;
   lignes: readonly LigneMesure[];
   devises: readonly string[];
 }) {
   const echelle = Math.max(0, ...lignes.map((l) => Math.abs(l.total)));
-  const id = `titre-${titre.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   return (
     <section aria-labelledby={id}>
       <h2 id={id}>{titre}</h2>
       <p className="intro">{intro}</p>
-      <div className="defilement">
+      <div className="defilement" role="region" aria-labelledby={id} tabIndex={0}>
         <table>
           <thead>
             <tr>
@@ -65,7 +67,7 @@ export function TableauMesure({
                 <th scope="row">{libelleScenario(l.scenario)}</th>
                 {devises.map((d) => (
                   <td className="num" key={d}>
-                    <Montant valeur={l.parDevise[d] ?? 0} />
+                    <Montant valeur={l.parDevise.get(d) ?? 0} />
                   </td>
                 ))}
                 <td className="num">

@@ -92,6 +92,7 @@ export function stabiliteTransmission(
   nbRetards: number,
   nbSousPeriodes = 2,
 ): number[] {
+  if (!(Number.isInteger(nbSousPeriodes) && nbSousPeriodes >= 1)) throw new Error("nbSousPeriodes entier >= 1");
   // Troncature vers zéro, comme `astype(int)` sur numpy.linspace.
   const bornes = espaceLineaire(0, deltaTauxServi.length, nbSousPeriodes + 1).map(Math.trunc);
   return bornes.slice(0, -1).map((a, k) => {

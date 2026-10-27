@@ -83,8 +83,8 @@ describe("flux et mesures", () => {
       inclureMarge: true,
     });
     const dec = r.decomposition("pentification", "devise");
-    expect(Object.keys(dec).sort()).toEqual(["EUR", "USD"]);
-    expect(procheRel(dec["EUR"]! + dec["USD"]!, r.delta("pentification"), 1e-12)).toBe(true);
+    expect([...dec.keys()].sort()).toEqual(["EUR", "USD"]);
+    expect(procheRel(dec.get("EUR")! + dec.get("USD")!, r.delta("pentification"), 1e-12)).toBe(true);
   });
 
   it("refuse un doublon et une devise sans courbe", () => {
@@ -113,5 +113,17 @@ describe("flux et mesures", () => {
     const fwd = (r_: number): number => (Math.exp(r_ * 0.25) - 1) / 0.25;
     expect(procheRel(r.total(), 100 * 0.25 * (0.025 + 3 * (fwd(R) + 0.005)), 1e-12)).toBe(true);
     expect(procheRel(r.delta("hausse_parallele"), 100 * 0.75 * (fwd(0.05) - fwd(R)), 1e-12)).toBe(true);
+  });
+
+  it("identifiants et devises sans piège de prototype, ordre d'insertion conservé", () => {
+    const m = marchePlat();
+    const pos = ["__proto__", "20", "B", "10"].map((identifiant) => obligation({ identifiant }));
+    const r = calculerDeltaEve(pos, { EUR: m }, CHOCS_BALE, { inclureMarge: true });
+    expect([...r.base.keys()]).toEqual(["__proto__", "20", "B", "10"]);
+    expect(r.total()).toBeCloseTo(4 * valeurActualisee(obligation(), m, m, true), 10);
+    expect(() =>
+      calculerDeltaEve([obligation({ devise: "toString" })], { EUR: m }, CHOCS_BALE, { inclureMarge: true }),
+    ).toThrow(/devise/);
+    expect(m.courbeIndex("constructor")).toBe(m.actualisation);
   });
 });

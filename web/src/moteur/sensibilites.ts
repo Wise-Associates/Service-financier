@@ -108,6 +108,18 @@ export function deltaPvRisqueBase(
   return pv(positions, marche, options.inclureMarge, () => chocBase, index) - base;
 }
 
+/** Écriture courte d'un nombre, comme le format `:g` de Python (6 chiffres significatifs). */
+function formatG(x: number): string {
+  if (x === 0) return "0";
+  const exposant = Math.floor(Math.log10(Math.abs(x)));
+  if (exposant < -4 || exposant >= 6) {
+    const [mantisse, exp] = x.toExponential(5).split("e");
+    const e = Number(exp);
+    return `${Number(mantisse)}e${e < 0 ? "-" : "+"}${String(Math.abs(e)).padStart(2, "0")}`;
+  }
+  return String(Number(x.toPrecision(6)));
+}
+
 export class Gaps {
   constructor(
     readonly bornes: readonly number[],
@@ -121,7 +133,7 @@ export class Gaps {
   libelles(): string[] {
     const fmt = (x: number): string => {
       if (!Number.isFinite(x)) return "∞";
-      return x > 0 && x < 1 ? `${arrondiBancaire(x * 12)}m` : `${x}a`;
+      return x > 0 && x < 1 ? `${arrondiBancaire(x * 12)}m` : `${formatG(x)}a`;
     };
     return this.gaps.map((_, k) => `]${fmt(this.bornes[k]!)} ; ${fmt(this.bornes[k + 1]!)}]`);
   }

@@ -49,6 +49,8 @@ def test_bootstrap_reprice_les_swaps_par():
 def test_bootstrap_refuse_des_maturites_non_consecutives():
     with pytest.raises(ValueError):
         bootstrap_swaps([1, 2, 5], [0.02, 0.02, 0.02])
+    with pytest.raises(ValueError):
+        bootstrap_swaps([1.9, 2.2], [0.02, 0.02])
 
 
 def test_plancher_retient_le_taux_observe_s_il_est_plus_bas():
@@ -61,3 +63,5 @@ def test_plancher_retient_le_taux_observe_s_il_est_plus_bas():
 def test_courbe_refuse_des_maturites_non_croissantes():
     with pytest.raises(ValueError):
         CourbeZero([2, 1], [0.01, 0.02])
+    with pytest.raises(ValueError):
+        CourbeZero([1, float("nan")], [0.01, 0.02])

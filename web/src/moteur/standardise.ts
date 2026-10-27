@@ -12,6 +12,7 @@
  * - options automatiques : revalorisation complète sous chaque scénario.
  */
 
+import { dictionnaire, propre } from "./cles";
 import type { FonctionTaux } from "./courbes";
 import type { Marches, ParametresChocs } from "./mesures";
 import { CapFloor } from "./options";
@@ -65,7 +66,7 @@ export class ResultatStandardise {
   ) {}
 
   deltaAgrege(scenario: string): number {
-    const d = this.deltaParScenarioDevise[scenario];
+    const d = propre(this.deltaParScenarioDevise, scenario);
     if (d === undefined) throw new Error(`scénario non calculé : ${scenario}`);
     return agregerDevises(d, this.poidsGains);
   }
@@ -106,13 +107,13 @@ export function calculerDeltaEveStandardise(
   },
 ): ResultatStandardise {
   const plancher = options.plancher === undefined ? plancherEba : options.plancher;
-  const res: Record<string, Record<string, number>> = {};
+  const res = dictionnaire<Record<string, number>>();
   for (const s of options.scenarios ?? SCENARIOS_EVE) {
-    const parDevise: Record<string, number> = {};
+    const parDevise = dictionnaire<number>();
     for (const [d, m0] of Object.entries(marches)) {
       const pos = positions.filter((p) => p.devise === d);
       if (pos.length === 0) continue;
-      const pc = parametresChoc[d];
+      const pc = propre(parametresChoc, d);
       if (pc === undefined) throw new Error(`paramètres de choc absents pour ${d}`);
       const ms = marcheScenario(m0, s, pc, plancher);
       const df0 = MILIEUX_BALE.map((t) => m0.actualisation.facteurActualisation(t));

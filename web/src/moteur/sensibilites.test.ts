@@ -5,7 +5,7 @@ import { marchePente, marchePlat, procheRel } from "./fixtures-tests";
 import { valeurActualisee } from "./mesures";
 import { Instrument, type Position } from "./positions";
 import { decalerMarche } from "./scenarios";
-import { approximationTaylor, deltaPvRisqueBase, gamma, gapsRepricing, krd, pv01 } from "./sensibilites";
+import { Gaps, approximationTaylor, deltaPvRisqueBase, gamma, gapsRepricing, krd, pv01 } from "./sensibilites";
 
 function zc(maturite = 5): Instrument {
   return new Instrument({ identifiant: "zc", categorie: "titre", devise: "EUR", sens: 1, encours: 100, taux: 0, maturite });
@@ -118,5 +118,9 @@ describe("sensibilités", () => {
       attendu += 100 * 0.25 * dfwd * m.actualisation.facteurActualisation(b);
     }
     expect(procheRel(d, attendu, 1e-12)).toBe(true);
+  });
+
+  it("libellés des tranches au format court de Python (:g)", () => {
+    expect(new Gaps([1.234567891, 1e6, Infinity], [0, 0]).libelles()).toEqual(["]1.23457a ; 1e+06a]", "]1e+06a ; ∞]"]);
   });
 });

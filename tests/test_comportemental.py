@@ -130,3 +130,21 @@ def test_pret_rembourse_plus_vite_quand_les_taux_baissent(marche_plat):
     r = calculer_delta_eve([p, sans_option], {"EUR": marche_plat}, CHOCS_BALE, inclure_marge=True)
     dec = r.decomposition("baisse_parallele", "position")
     assert dec["immo"] < dec["x"]
+
+
+def test_estimation_refuse_des_regresseurs_colineaires():
+    # Marché constant : la constante et le β sont confondus, la transmission n'est pas identifiable.
+    with pytest.raises(ValueError, match="colinéaires"):
+        estimer_transmission(np.linspace(0, 0.01, 24), np.full(24, 0.001), nb_retards=0)
+
+
+def test_stabilite_exige_au_moins_une_sous_periode():
+    with pytest.raises(ValueError):
+        stabilite_transmission(np.zeros(30), np.linspace(0, 1, 30), 0, 0)
+
+
+def test_positions_comportementales_refusent_un_encours_non_fini():
+    with pytest.raises(ValueError):
+        depot(encours=float("nan"))
+    with pytest.raises(ValueError):
+        pret(encours=float("nan"))

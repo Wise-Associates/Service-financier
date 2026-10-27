@@ -89,7 +89,8 @@ export function densiteNormale(x: number): number {
 
 /**
  * Fonction d'erreur. JavaScript n'en fournit pas : développement en série près de 0 et fraction
- * continue de la fonction complémentaire au-delà, précision proche de la double précision.
+ * continue de la fonction complémentaire au-delà ; écart mesuré à `math.erf` de Python : au plus
+ * quelques ulp (≈ 1,4e-15 en relatif, maximum vers x = 2,3).
  */
 export function erf(x: number): number {
   if (Number.isNaN(x)) return Number.NaN;
@@ -140,18 +141,26 @@ export function moindresCarres(X: readonly (readonly number[])[], y: readonly nu
   if (m !== y.length || m < n || n === 0) throw new Error("moindresCarres : dimensions incohérentes");
   const A = X.map((ligne) => [...ligne]);
   const b = [...y];
+  // Seuil de rang relatif, comme le `rcond` par défaut de numpy (ε · max(m, n) · plus grande norme
+  // de colonne) : une colonne colinéaire aux autres à l'arrondi près n'est pas identifiable.
+  let normeMax = 0;
+  for (let j = 0; j < n; j++) {
+    let s = 0;
+    for (let i = 0; i < m; i++) s += A[i]![j]! ** 2;
+    normeMax = Math.max(normeMax, Math.sqrt(s));
+  }
+  const seuilRang = Number.EPSILON * Math.max(m, n) * normeMax;
   for (let k = 0; k < n; k++) {
     let norme = 0;
     for (let i = k; i < m; i++) norme += A[i]![k]! ** 2;
     norme = Math.sqrt(norme);
-    if (norme === 0) throw new Error("moindresCarres : matrice de rang insuffisant");
+    if (norme <= seuilRang) throw new Error("régresseurs colinéaires : coefficients non identifiables");
     const alpha = A[k]![k]! > 0 ? -norme : norme;
     const v = new Array<number>(m).fill(0);
     for (let i = k; i < m; i++) v[i] = A[i]![k]!;
     v[k] = v[k]! - alpha;
     let vv = 0;
     for (let i = k; i < m; i++) vv += v[i]! ** 2;
-    if (vv === 0) continue;
     for (let j = k; j < n; j++) {
       let s = 0;
       for (let i = k; i < m; i++) s += v[i]! * A[i]![j]!;

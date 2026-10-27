@@ -361,7 +361,7 @@ export function executer(params: Parametres, maintenant: string): Resultats | Ca
   journal.push(...controleVariation("ΔEVE perte maximale", -perte, precedent, ctx, 0.1, 5));
   for (const s of eve.listeScenarios) {
     journal.push(...controleSigne(`ΔEVE ${s}`, eve.delta(s), "libre", ctx));
-    const totalDevises = Object.values(eve.decomposition(s, "devise")).reduce((a, b) => a + b, 0);
+    const totalDevises = [...eve.decomposition(s, "devise").values()].reduce((a, b) => a + b, 0);
     journal.push(...controleCoherence(`ΔEVE ${s} = Σ devises`, eve.delta(s), totalDevises, ctx, 1e-6));
   }
 

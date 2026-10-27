@@ -11,6 +11,7 @@
  * texte en vigueur pour l'établissement avant tout usage réglementaire.
  */
 
+import { propre } from "./cles";
 import { type Courbe, CourbeDecalee, type FonctionTaux } from "./courbes";
 
 export const SCENARIOS_EVE = [
@@ -92,7 +93,7 @@ export class MarcheDevise {
 
   courbeIndex(index: string | null): Courbe {
     if (index === null) return this.actualisation;
-    return this.projection[index] ?? this.actualisation;
+    return propre(this.projection, index) ?? this.actualisation;
   }
 }
 
@@ -107,7 +108,7 @@ export function decalerMarche(
   index: string | null = null,
 ): MarcheDevise {
   if (index !== null) {
-    const courbe = marche.projection[index];
+    const courbe = propre(marche.projection, index);
     if (courbe === undefined) throw new Error(`index ${index} absent du marché ${marche.devise}`);
     return new MarcheDevise(marche.devise, marche.actualisation, {
       ...marche.projection,

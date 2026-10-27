@@ -1,5 +1,5 @@
 import type { Resultats } from "@/demo/banqueFictive";
-import { libelleScenario, nombre, pourcentage, type Ton } from "@/demo/presentation";
+import { libelleScenario, nombre, pourcentage, pourcentageSeuil, type Ton } from "@/demo/presentation";
 import { bloquants } from "@/moteur/controles";
 
 interface Carte {
@@ -18,7 +18,7 @@ export function Synthese({ r }: { r: Resultats }) {
       (sot): Carte => ({
         titre: `SOT ${sot.indicateur}`,
         valeur: pourcentage(sot.ratio),
-        detail: `${sot.depassement ? "Dépassement du seuil" : "Sous le seuil"} de ${pourcentage(sot.seuil, 0)} · ${libelleScenario(sot.scenario)}`,
+        detail: `${sot.depassement ? "Dépassement du seuil" : "Sous le seuil"} de ${pourcentageSeuil(sot.seuil)} · ${libelleScenario(sot.scenario)}`,
         ton: sot.depassement ? "ko" : "ok",
       }),
     ),

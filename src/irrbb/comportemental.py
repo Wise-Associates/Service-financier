@@ -80,7 +80,10 @@ def estimer_transmission(
     y = y_tot[nb_retards:]
     colonnes = [np.ones(n)] + [x_tot[nb_retards - j : y_tot.size - j] for j in range(nb_retards + 1)]
     X = np.column_stack(colonnes)
-    coef, *_ = np.linalg.lstsq(X, y, rcond=None)
+    coef, _, rang, _ = np.linalg.lstsq(X, y, rcond=None)
+    if rang < X.shape[1]:
+        # Régresseurs colinéaires (marché constant, retards redondants) : les β ne sont pas identifiables.
+        raise ValueError("régresseurs colinéaires : transmission non identifiable sur cet historique")
     residus = y - X @ coef
     sct = float(np.sum((y - y.mean()) ** 2))
     r2 = 1 - float(np.sum(residus**2)) / sct if sct > 0 else float("nan")
@@ -92,6 +95,8 @@ def stabilite_transmission(
     delta_taux_servi: ArrayLike, delta_taux_marche: ArrayLike, nb_retards: int, nb_sous_periodes: int = 2
 ) -> list[float]:
     """β cumulé estimé séparément sur des sous-périodes consécutives (test de stabilité)."""
+    if nb_sous_periodes < 1:
+        raise ValueError("nb_sous_periodes >= 1")
     y = np.asarray(delta_taux_servi, dtype=float)
     x = np.asarray(delta_taux_marche, dtype=float)
     bornes = np.linspace(0, y.size, nb_sous_periodes + 1).astype(int)
@@ -141,7 +146,7 @@ class DepotNonEcheance:
             raise ValueError(f"{self.identifiant} : part stable dans [0 ; 1]")
         if not 0 <= self.beta <= 1:
             raise ValueError(f"{self.identifiant} : β dans [0 ; 1]")
-        if self.encours <= 0:
+        if not (self.encours > 0 and math.isfinite(self.encours)):
             raise ValueError(f"{self.identifiant} : encours strictement positif")
         if self.taux_servi < self.plancher_taux_servi:
             raise ValueError(f"{self.identifiant} : taux servi sous son plancher")
@@ -201,7 +206,7 @@ class PretRemboursementAnticipe:
     categorie: str = "pret_immobilier"
 
     def __post_init__(self) -> None:
-        if self.encours <= 0 or self.maturite <= 0:
+        if not (self.encours > 0 and self.maturite > 0 and math.isfinite(self.encours + self.maturite)):
             raise ValueError(f"{self.identifiant} : encours et maturité strictement positifs")
 
     def cpr(self, marche: MarcheDevise) -> float:

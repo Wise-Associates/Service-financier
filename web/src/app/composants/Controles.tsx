@@ -1,11 +1,11 @@
-import { statutControles } from "@/demo/presentation";
-import type { EntreeJournal } from "@/moteur/controles";
+import { statutControles, tonSeverite, valeurJournal } from "@/demo/presentation";
+import { type EntreeJournal, Severite } from "@/moteur/controles";
 
 export function Controles({ journal, trace }: { journal: readonly EntreeJournal[]; trace: string }) {
   return (
     <section aria-labelledby="titre-controles">
       <h2 id="titre-controles">Contrôles</h2>
-      <div className="defilement">
+      <div className="defilement" role="region" aria-labelledby="titre-controles" tabIndex={0}>
         <table>
           <thead>
             <tr>
@@ -29,7 +29,7 @@ export function Controles({ journal, trace }: { journal: readonly EntreeJournal[
       </div>
       <details>
         <summary>Voir le journal complet ({journal.length} entrées)</summary>
-        <div className="defilement">
+        <div className="defilement" role="region" aria-label="Journal complet des contrôles" tabIndex={0}>
           <table className="journal">
             <thead>
               <tr>
@@ -45,9 +45,15 @@ export function Controles({ journal, trace }: { journal: readonly EntreeJournal[
                 <tr key={`${e.idRegle}-${e.objet}-${i}`}>
                   <td>{e.idRegle}</td>
                   <td>{e.objet}</td>
-                  <td>{e.valeurAttendue}</td>
-                  <td>{e.valeurObservee}</td>
-                  <td>{e.severite}</td>
+                  <td>{valeurJournal(e.valeurAttendue)}</td>
+                  <td>{valeurJournal(e.valeurObservee)}</td>
+                  <td>
+                    {e.severite === Severite.INFORMATION ? (
+                      e.severite
+                    ) : (
+                      <span className={`pastille ${tonSeverite(e.severite)}`}>{e.severite}</span>
+                    )}
+                  </td>
                   <td>{e.statut}</td>
                   <td>{e.justification}</td>
                 </tr>
