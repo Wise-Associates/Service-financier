@@ -8,6 +8,13 @@
 
 import { describe, expect, it } from "vitest";
 
+import { estimerTransmission } from "@/moteur/comportemental";
+import { CourbeZero } from "@/moteur/courbes";
+import { calculerDeltaEve, calculerDeltaNii } from "@/moteur/mesures";
+import { CapFloor } from "@/moteur/options";
+import { Instrument, type Position } from "@/moteur/positions";
+import { CHOCS_BALE, MarcheDevise } from "@/moteur/scenarios";
+
 import { type Resultats, executer } from "./banqueFictive";
 import reference from "./reference-python.json";
 
@@ -20,15 +27,17 @@ function proche(obtenu: number, attendu: number, chemin: string): void {
 }
 
 function comparerDict(
-  obtenu: Readonly<Record<string, number>>,
+  obtenu: ReadonlyMap<string, number> | Readonly<Record<string, number>>,
   attendu: Readonly<Record<string, number>>,
   chemin: string,
 ): void {
-  expect(Object.keys(obtenu).sort(), chemin).toEqual(Object.keys(attendu).sort());
-  for (const [k, v] of Object.entries(attendu)) proche(obtenu[k]!, v, `${chemin}/${k}`);
+  const o = obtenu instanceof Map ? obtenu : new Map(Object.entries(obtenu));
+  // Même ordre que le moteur Python (ordre d'insertion), pas seulement mêmes clés.
+  expect([...o.keys()], chemin).toEqual(Object.keys(attendu));
+  for (const [k, v] of Object.entries(attendu)) proche(o.get(k)!, v, `${chemin}/${k}`);
 }
 
-describe.each(Object.entries(reference))("parité avec le moteur Python (%s)", (_, ref) => {
+describe.each(Object.entries(reference.demo))("parité avec le moteur Python (%s)", (_, ref) => {
   const r = executer(ref.parametres, "2026-10-27T09:00:00") as Resultats;
 
   it("le calcul n'est pas bloqué", () => {
@@ -38,12 +47,12 @@ describe.each(Object.entries(reference))("parité avec le moteur Python (%s)", (
   it("EVE par position, en base et sous les six chocs", () => {
     comparerDict(r.eve.base, ref.eve.base, "eve/base");
     expect(r.eve.listeScenarios).toEqual(Object.keys(ref.eve.scenarios));
-    for (const [s, v] of Object.entries(ref.eve.scenarios)) comparerDict(r.eve.scenarios[s]!, v, `eve/${s}`);
+    for (const [s, v] of Object.entries(ref.eve.scenarios)) comparerDict(r.eve.scenarios.get(s)!, v, `eve/${s}`);
   });
 
   it("NII par position, en base et sous les deux chocs parallèles", () => {
     comparerDict(r.nii.base, ref.nii.base, "nii/base");
-    for (const [s, v] of Object.entries(ref.nii.scenarios)) comparerDict(r.nii.scenarios[s]!, v, `nii/${s}`);
+    for (const [s, v] of Object.entries(ref.nii.scenarios)) comparerDict(r.nii.scenarios.get(s)!, v, `nii/${s}`);
   });
 
   it("ΔEVE standardisé par scénario et par devise", () => {
@@ -77,5 +86,96 @@ describe.each(Object.entries(reference))("parité avec le moteur Python (%s)", (
   it("mêmes contrôles, sévérités et statuts", () => {
     const obtenus = [...new Set(r.journal.map((e) => JSON.stringify([e.idRegle, e.severite, e.statut])))].sort();
     expect(obtenus).toEqual(ref.controles.map((c) => JSON.stringify(c)).sort());
+  });
+});
+
+/** Chemins que la banque fictive n'emprunte pas : mêmes entrées que `cas_unitaires` dans reference_web.py. */
+describe("parité avec le moteur Python (cas unitaires)", () => {
+  const ref = reference.unitaires;
+  const annuelle = new CourbeZero([1, 5, 10], [0.02, 0.025, 0.03], "annuelle");
+  const simple = new CourbeZero([0.5, 2], [0.03, 0.032], "simple");
+  const pente = new CourbeZero([0.25, 1, 5, 10, 30], [0.021, 0.023, 0.027, 0.03, 0.031]);
+  const marche = new MarcheDevise("EUR", pente, { EURIBOR3M: new CourbeZero([0.25, 30], [0.022, 0.033]) });
+  const negatif = new MarcheDevise("EUR", new CourbeZero([1, 10], [-0.008, 0.004]));
+  const positions: Position[] = [
+    new Instrument({
+      identifiant: "VAR-LIN",
+      categorie: "pret",
+      devise: "EUR",
+      sens: 1,
+      encours: 100,
+      taux: 0.026,
+      maturite: 6,
+      frequence: 4,
+      amortissement: "lineaire",
+      index: "EURIBOR3M",
+      marge: 0.004,
+    }),
+    new Instrument({
+      identifiant: "FIXE-0",
+      categorie: "pret",
+      devise: "EUR",
+      sens: 1,
+      encours: 100,
+      taux: 0.031,
+      maturite: 2.5,
+      frequence: 2,
+      amortissement: "annuite",
+      dureeRenouvellement: 0,
+    }),
+    new CapFloor({
+      identifiant: "CAP-BLACK",
+      devise: "EUR",
+      sens: 1,
+      notionnel: 100,
+      strike: 0.028,
+      maturite: 5,
+      frequence: 4,
+      vol: 0.22,
+      modele: "black",
+      cp: 1,
+      index: "EURIBOR3M",
+    }),
+    new CapFloor({
+      identifiant: "FLOOR-BACH",
+      devise: "EUR",
+      sens: -1,
+      notionnel: 100,
+      strike: 0.02,
+      maturite: 5,
+      frequence: 4,
+      vol: 0.007,
+      modele: "bachelier",
+      cp: -1,
+      index: "EURIBOR3M",
+    }),
+  ];
+
+  it("capitalisations annuelle et simple", () => {
+    [0.5, 3, 12].forEach((t, i) => proche(annuelle.facteurActualisation(t), ref.dfAnnuelle[i]!, `annuelle/${t}`));
+    [0.25, 1, 3].forEach((t, i) => proche(simple.facteurActualisation(t), ref.dfSimple[i]!, `simple/${t}`));
+  });
+
+  it("ΔEVE : variable amorti avec index, annuité, cap Black, floor Bachelier", () => {
+    const eve = calculerDeltaEve(positions, { EUR: marche }, CHOCS_BALE, { inclureMarge: false });
+    for (const [s, v] of Object.entries(ref.eve)) comparerDict(eve.decomposition(s, "position"), v, `eve/${s}`);
+  });
+
+  it("ΔNII : variable amorti avec index, renouvellement de durée nulle", () => {
+    const nii = calculerDeltaNii(positions.slice(0, 2), { EUR: marche }, CHOCS_BALE);
+    for (const [s, v] of Object.entries(ref.nii)) comparerDict(nii.decomposition(s, "position"), v, `nii/${s}`);
+  });
+
+  it("plancher post-choc sur des taux négatifs", () => {
+    const zc = new Instrument({ identifiant: "ZC", categorie: "titre", devise: "EUR", sens: 1, encours: 100, taux: 0, maturite: 3 });
+    const eve = calculerDeltaEve([zc], { EUR: negatif }, CHOCS_BALE, { inclureMarge: true });
+    for (const [s, v] of Object.entries(ref.eveTauxNegatifs)) proche(eve.delta(s), v, `negatif/${s}`);
+  });
+
+  it("estimation de la transmission des dépôts", () => {
+    const x = Array.from({ length: 48 }, (_, i) => 0.002 * Math.sin(0.37 * i) + 0.001 * Math.cos(1.3 * i));
+    const y = x.map((v, i) => 0.0001 + 0.3 * v + 0.15 * x[(i + 47) % 48]! + 0.00005 * Math.sin(2.1 * i));
+    const t = estimerTransmission(y.slice(1), x.slice(1), 1);
+    [t.alpha, ...t.betas, t.r2].forEach((v, i) => proche(v, ref.transmission[i]!, `transmission/${i}`));
   });
 });

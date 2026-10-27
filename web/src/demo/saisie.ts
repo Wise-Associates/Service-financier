@@ -93,6 +93,8 @@ export function premiereValeur(v: string | string[] | undefined): string | undef
 export interface Saisie {
   readonly parametres: Parametres;
   readonly erreurs: readonly string[];
+  /** Message d'erreur de chaque champ refusé, affiché sous le champ. */
+  readonly erreursParChamp: Readonly<Partial<Record<Champ["nom"], string>>>;
   /** Texte à réafficher dans chaque champ (la saisie brute, même refusée, pour la corriger). */
   readonly affichage: Readonly<Record<Champ["nom"], string>>;
   readonly inclureMarge: boolean;
@@ -105,7 +107,7 @@ function texteDefaut(c: Champ): string {
 }
 
 export function lireSaisie(url: ParametresUrl): Saisie {
-  const erreurs: string[] = [];
+  const erreursParChamp: Partial<Record<Champ["nom"], string>> = {};
   const valeurs: Partial<Record<Champ["nom"], number>> = {};
   const affichage = {} as Record<Champ["nom"], string>;
   for (const c of CHAMPS) {
@@ -118,11 +120,12 @@ export function lireSaisie(url: ParametresUrl): Saisie {
     affichage[c.nom] = brut.slice(0, LONGUEUR_MAX);
     const res = schemaChamp(c).safeParse(brut);
     if (res.success) valeurs[c.nom] = res.data * c.echelle;
-    else erreurs.push(res.error.issues[0]?.message ?? `${c.libelle} : saisie invalide.`);
+    else erreursParChamp[c.nom] = res.error.issues[0]?.message ?? `${c.libelle} : saisie invalide.`;
   }
-  // Une case décochée n'est pas envoyée par le navigateur : seul « calculer » distingue un
-  // formulaire soumis d'une première visite.
-  const soumis = premiereValeur(url[NOM_SOUMIS]) !== undefined;
+  const erreurs = Object.values(erreursParChamp);
+  // Une case décochée n'est pas envoyée par le navigateur : le moindre paramètre connu dans l'URL
+  // (formulaire soumis ou lien partagé) signifie que la case a été vue, donc décochée si absente.
+  const soumis = [NOM_SOUMIS, NOM_MARGE, ...CHAMPS.map((c) => c.nom)].some((n) => premiereValeur(url[n]) !== undefined);
   const inclureMarge = soumis ? premiereValeur(url[NOM_MARGE]) === "oui" : PARAMETRES_DEFAUT.inclureMarge;
   const parametres: Parametres =
     erreurs.length > 0
@@ -134,5 +137,5 @@ export function lireSaisie(url: ParametresUrl): Saisie {
           poidsGains: valeurs.poidsGains!,
           inclureMarge,
         };
-  return { parametres, erreurs, affichage, inclureMarge };
+  return { parametres, erreurs, erreursParChamp, inclureMarge, affichage };
 }

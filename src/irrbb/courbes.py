@@ -102,7 +102,7 @@ class CourbeZero(Courbe):
         r = np.asarray(taux, dtype=float)
         if m.ndim != 1 or m.shape != r.shape or m.size == 0:
             raise ValueError("CourbeZero : maturités et taux de même longueur, non vides")
-        if np.any(m <= 0) or np.any(np.diff(m) <= 0):
+        if not np.all(m > 0) or not np.all(np.diff(m) > 0):
             raise ValueError("CourbeZero : maturités strictement positives et croissantes")
         if not np.all(np.isfinite(r)):
             raise ValueError("CourbeZero : taux non finis")
@@ -150,8 +150,10 @@ def bootstrap_swaps(maturites: Sequence[int], taux_par: Sequence[float]) -> Cour
     1, 2, …, N : interpoler les taux par manquants est un choix de marché que l'appelant
     doit faire et documenter, pas le moteur.
     """
+    if any(float(x) != float(i) for i, x in enumerate(maturites, start=1)):
+        raise ValueError("bootstrap_swaps : maturités annuelles consécutives 1..N attendues")
     m = [int(x) for x in maturites]
-    if m != list(range(1, len(m) + 1)):
+    if not m:
         raise ValueError("bootstrap_swaps : maturités annuelles consécutives 1..N attendues")
     s = np.asarray(taux_par, dtype=float)
     if s.shape != (len(m),):

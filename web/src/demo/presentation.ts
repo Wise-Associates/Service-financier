@@ -65,13 +65,23 @@ export function statutControles(journal: readonly EntreeJournal[], trace: string
     }
     if (code === "C09") {
       const acceptees = journal.filter((e) => e.statut === Statut.ACCEPTEE);
+      const enAttente = journal.filter((e) => e.statut === Statut.OUVERTE && e.severite === Severite.MAJEURE).length;
+      if (enAttente > 0) {
+        return {
+          code,
+          libelle,
+          statut: `${pluriel(enAttente, "anomalie majeure", "anomalies majeures")} en attente d'approbation`,
+          ton: "ko",
+        };
+      }
       if (acceptees.length === 0) return { code, libelle, statut: "Aucune anomalie à approuver", ton: "ok" };
       const qui = [...new Set(acceptees.map((e) => e.approbateur))].sort().join(", ");
+      // Même ton que l'anomalie acceptée elle-même (C07…) : traitée, mais à garder en vue.
       return {
         code,
         libelle,
-        statut: `${pluriel(acceptees.length, "anomalie acceptée", "anomalies acceptées")} par ${qui}`,
-        ton: "ok",
+        statut: `${pluriel(acceptees.length, "anomalie acceptée", "anomalies acceptées")} (approbateur : ${qui})`,
+        ton: "attention",
       };
     }
     if (entrees.length === 0) return { code, libelle, statut: "Non exécuté dans cette démonstration", ton: "info" };
@@ -85,7 +95,11 @@ export function statutControles(journal: readonly EntreeJournal[], trace: string
       code,
       libelle,
       statut: `${pire.severite} : ${pluriel(anomalies.length, "anomalie", "anomalies")}, ${etat}`,
-      ton: ouvertes > 0 || pire.severite === Severite.BLOQUANTE ? "ko" : "attention",
+      // Rouge seulement pour ce qui bloque la remise (cf. `bloquants`) : bloquante, ou majeure ouverte.
+      ton:
+        pire.severite === Severite.BLOQUANTE || (pire.severite === Severite.MAJEURE && ouvertes > 0)
+          ? "ko"
+          : "attention",
     };
   });
 }
@@ -105,9 +119,42 @@ export function pourcentage(x: number, decimales = 1): string {
   }).format(x);
 }
 
+/** Seuil saisi : autant de décimales que nécessaire (12,5 % reste 12,5 %, 15 % reste 15 %). */
+export function pourcentageSeuil(x: number): string {
+  return new Intl.NumberFormat("fr-FR", { style: "percent", maximumFractionDigits: 2 }).format(x);
+}
+
 /** Montant signé avec un vrai signe moins typographique. */
 export function montantSigne(x: number): string {
   const arrondi = Math.abs(x) < 0.05 ? 0 : x;
   if (arrondi === 0) return nombre(0);
   return `${arrondi > 0 ? "+" : "−"}${nombre(Math.abs(arrondi))}`;
+}
+
+export function tonSeverite(s: Severite): Ton {
+  if (s === Severite.BLOQUANTE) return "ko";
+  if (s === Severite.INFORMATION) return "info";
+  return "attention";
+}
+
+const NOMBRE_BRUT = /^-?\d+(\.\d+)?(e-?\d+)?$/;
+
+/**
+ * Valeur du journal lisible : les nombres bruts du moteur (« -168.98741566469107 ») passent au format
+ * français, les comparateurs « <= » et « >= » en « ≤ » et « ≥ ». Le texte reste sinon inchangé.
+ */
+export function valeurJournal(texte: string): string {
+  if (NOMBRE_BRUT.test(texte)) {
+    const x = Number(texte);
+    if (Math.abs(x) >= 1 || x === 0) return montantSigneJournal(x);
+    return new Intl.NumberFormat("fr-FR", { maximumSignificantDigits: 4 }).format(x).replace("-", "−");
+  }
+  return texte
+    .replace(/<=/g, "≤")
+    .replace(/>=/g, "≥")
+    .replace(/-?\d+\.\d+(e-?\d+)?/g, (n) => valeurJournal(n));
+}
+
+function montantSigneJournal(x: number): string {
+  return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 }).format(x).replace("-", "−");
 }

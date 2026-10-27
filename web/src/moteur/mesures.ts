@@ -9,6 +9,7 @@
  * se lisent directement comme actif − passif.
  */
 
+import { propre } from "./cles";
 import type { FonctionTaux } from "./courbes";
 import { type Position, totalFlux } from "./positions";
 import {
@@ -25,36 +26,40 @@ export type Axe = "devise" | "categorie" | "position";
 export type Marches = Readonly<Record<string, MarcheDevise>>;
 export type ParametresChocs = Readonly<Record<string, ParametresChoc>>;
 
-/** Valeurs par position, en base et par scénario, avec agrégations et écarts. */
+/**
+ * Valeurs par position, en base et par scénario, avec agrégations et écarts. Des `Map` plutôt que des
+ * objets : l'ordre d'insertion est conservé quelle que soit la forme des identifiants (« 10 », « 20 »…),
+ * comme les dict Python, et aucune clé ne se heurte aux propriétés héritées des objets.
+ */
 export class ResultatMesure {
   constructor(
     readonly mesure: string,
-    readonly base: Readonly<Record<string, number>>,
-    readonly scenarios: Readonly<Record<string, Readonly<Record<string, number>>>>,
-    readonly deviseDe: Readonly<Record<string, string>>,
-    readonly categorieDe: Readonly<Record<string, string>>,
+    readonly base: ReadonlyMap<string, number>,
+    readonly scenarios: ReadonlyMap<string, ReadonlyMap<string, number>>,
+    readonly deviseDe: ReadonlyMap<string, string>,
+    readonly categorieDe: ReadonlyMap<string, string>,
   ) {}
 
   get listeScenarios(): string[] {
-    return Object.keys(this.scenarios);
+    return [...this.scenarios.keys()];
   }
 
   private cle(identifiant: string, axe: Axe): string {
-    if (axe === "devise") return this.deviseDe[identifiant]!;
-    if (axe === "categorie") return this.categorieDe[identifiant]!;
+    if (axe === "devise") return this.deviseDe.get(identifiant)!;
+    if (axe === "categorie") return this.categorieDe.get(identifiant)!;
     return identifiant;
   }
 
-  private valeurs(scenario: string): Readonly<Record<string, number>> {
-    const v = scenario === "base" ? this.base : this.scenarios[scenario];
+  private valeurs(scenario: string): ReadonlyMap<string, number> {
+    const v = scenario === "base" ? this.base : this.scenarios.get(scenario);
     if (v === undefined) throw new Error(`scénario non calculé : ${scenario}`);
     return v;
   }
 
   total(scenario = "base", devise: string | null = null): number {
     let s = 0;
-    for (const [k, v] of Object.entries(this.valeurs(scenario))) {
-      if (devise === null || this.deviseDe[k] === devise) s += v;
+    for (const [k, v] of this.valeurs(scenario)) {
+      if (devise === null || this.deviseDe.get(k) === devise) s += v;
     }
     return s;
   }
@@ -64,11 +69,11 @@ export class ResultatMesure {
   }
 
   /** Δ du scénario décomposé par devise, catégorie de produit ou position (PDF p. 12). */
-  decomposition(scenario: string, axe: Axe = "devise"): Record<string, number> {
-    const res: Record<string, number> = {};
-    for (const [ident, v] of Object.entries(this.valeurs(scenario))) {
+  decomposition(scenario: string, axe: Axe = "devise"): Map<string, number> {
+    const res = new Map<string, number>();
+    for (const [ident, v] of this.valeurs(scenario)) {
       const cle = this.cle(ident, axe);
-      res[cle] = (res[cle] ?? 0) + v - this.base[ident]!;
+      res.set(cle, (res.get(cle) ?? 0) + v - this.base.get(ident)!);
     }
     return res;
   }
@@ -90,7 +95,9 @@ function verifierPositions(positions: readonly Position[], marches: Marches): vo
   for (const p of positions) {
     if (vus.has(p.identifiant)) throw new Error(`identifiant en double : ${p.identifiant} (double comptage)`);
     vus.add(p.identifiant);
-    if (!(p.devise in marches)) throw new Error(`${p.identifiant} : aucune courbe pour la devise ${p.devise}`);
+    if (propre(marches, p.devise) === undefined) {
+      throw new Error(`${p.identifiant} : aucune courbe pour la devise ${p.devise}`);
+    }
   }
 }
 
@@ -106,27 +113,27 @@ function parScenario(
   mesure: string,
 ): ResultatMesure {
   verifierPositions(positions, marches);
-  const manquants = [...new Set(positions.map((p) => p.devise))].filter((d) => !(d in parametresChoc)).sort();
+  const manquants = [...new Set(positions.map((p) => p.devise))]
+    .filter((d) => propre(parametresChoc, d) === undefined)
+    .sort();
   if (manquants.length > 0) throw new Error(`paramètres de choc absents pour : ${manquants.join(", ")}`);
-  const base: Record<string, number> = {};
-  for (const p of positions) base[p.identifiant] = evaluer(p, marches[p.devise]!, marches[p.devise]!);
-  const res: Record<string, Record<string, number>> = {};
+  const marcheDe = (p: Position): MarcheDevise => propre(marches, p.devise)!;
+  const base = new Map(positions.map((p) => [p.identifiant, evaluer(p, marcheDe(p), marcheDe(p))]));
+  const res = new Map<string, Map<string, number>>();
   for (const s of scenarios) {
-    const choques: Record<string, MarcheDevise> = {};
+    const choques = new Map<string, MarcheDevise>();
     for (const [d, m] of Object.entries(marches)) {
-      const pc = parametresChoc[d];
-      if (pc !== undefined) choques[d] = marcheScenario(m, s, pc, plancher);
+      const pc = propre(parametresChoc, d);
+      if (pc !== undefined) choques.set(d, marcheScenario(m, s, pc, plancher));
     }
-    const valeurs: Record<string, number> = {};
-    for (const p of positions) valeurs[p.identifiant] = evaluer(p, choques[p.devise]!, marches[p.devise]!);
-    res[s] = valeurs;
+    res.set(s, new Map(positions.map((p) => [p.identifiant, evaluer(p, choques.get(p.devise)!, marcheDe(p))])));
   }
   return new ResultatMesure(
     mesure,
     base,
     res,
-    Object.fromEntries(positions.map((p) => [p.identifiant, p.devise])),
-    Object.fromEntries(positions.map((p) => [p.identifiant, p.categorie])),
+    new Map(positions.map((p) => [p.identifiant, p.devise])),
+    new Map(positions.map((p) => [p.identifiant, p.categorie])),
   );
 }
 

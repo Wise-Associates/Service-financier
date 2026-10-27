@@ -6,8 +6,8 @@ standardisée et SOT, sensibilités, puis écrit le rapport et le journal dans `
 
 Usage : python exemples/demo_banque_fictive.py [dossier_de_sortie]
 
-`executer` fait tout le calcul sans écrire sur disque : l'interface web (`interface_web.py`)
-l'appelle avec les paramètres saisis par l'utilisateur.
+`executer` fait tout le calcul sans écrire sur disque : `reference_web.py` l'appelle pour
+produire la référence de parité du moteur TypeScript de l'interface (`web/`).
 """
 
 from __future__ import annotations
@@ -279,7 +279,14 @@ def executer(params: Parametres, maintenant: datetime) -> Resultats | CalculBloq
         "plancher": "RTS UE 2024/856 (paramètres)",
         "arrete": DATE_ARRETE.isoformat(),
     }
-    trace = empreinte({"source": source, "versions": versions})
+    parametres = {
+        "fonds_propres_t1": params.fonds_propres_t1,
+        "seuil_sot_eve": params.seuil_sot_eve,
+        "seuil_sot_nii": params.seuil_sot_nii,
+        "poids_gains": params.poids_gains,
+    }
+    # Les paramètres font partie de l'empreinte C03 : un autre seuil ou Tier 1 est un autre calcul.
+    trace = empreinte({"source": source, "versions": versions, "parametres": parametres})
     return Resultats(eve, nii, std, sot_eve, sot_nii, sens, gaps, journal, versions, trace)
 
 

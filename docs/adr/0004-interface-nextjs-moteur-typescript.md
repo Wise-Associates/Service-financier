@@ -17,7 +17,10 @@ processus à lancer et à déployer.
   camelCase, mêmes docstrings, mêmes pages du PDF). Les tests Python à référence indépendante sont
   portés à l'identique dans `web/src/moteur/*.test.ts`.
 - **Parité contrôlée** : `exemples/reference_web.py` écrit les résultats du moteur Python sur la
-  banque fictive (deux jeux de paramètres) dans `web/src/demo/reference-python.json` ;
+  banque fictive (deux jeux de paramètres) et sur des cas unitaires que la démonstration n'emprunte
+  pas (capitalisations annuelle et simple, variable amorti indexé, cap Black, floor Bachelier, taux
+  négatifs sous plancher, renouvellement de durée nulle, transmission des dépôts) dans
+  `web/src/demo/reference-python.json` ;
   `web/src/demo/parite.test.ts` exige le même résultat du moteur TypeScript à 1e-9 près en relatif
   (écart constaté : ~5e-13) ; `tests/test_reference_web.py` échoue si la référence n'est plus à jour.
 - Calcul côté serveur uniquement (Server Component), sans server action ni API : la page lit les
@@ -38,7 +41,10 @@ processus à lancer et à déployer.
   les deux côtés.
 - L'empreinte C03 du moteur TypeScript n'est pas comparable à celle du moteur Python (écriture
   JSON des nombres différente) ; elle reste reproductible d'un calcul TypeScript à l'autre.
-- Le texte du journal peut différer à la marge (« 1200 » au lieu de « 1200.0 ») ; règles,
-  sévérités et statuts sont identiques et testés.
+- Le texte du journal peut différer à la marge (« 1200 » au lieu de « 1200.0 », « true » au lieu
+  de « True », arrondi des écarts à 2 décimales) ; règles, sévérités et statuts sont identiques et testés.
+- Les objets indexés par des clés de l'appelant (devise, index, catégorie) sont lus sans remonter la
+  chaîne de prototypes (`moteur/cles.ts`) et les résultats par position sont des `Map`, pour garder
+  la sémantique des dict Python (ordre d'insertion, aucune clé réservée).
 - Toujours un outil de poste de travail sur données fictives : pas d'authentification. Un
   déploiement (Vercel ou autre) exige un nouvel ADR (authentification, journalisation, données).

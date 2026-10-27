@@ -154,6 +154,17 @@ describe("comportemental", () => {
     const sansOption = pret({ identifiant: "x", cprMin: 0.08, cprMax: 0.08 });
     const r = calculerDeltaEve([p, sansOption], { EUR: m }, CHOCS_BALE, { inclureMarge: true });
     const dec = r.decomposition("baisse_parallele", "position");
-    expect(dec["immo"]!).toBeLessThan(dec["x"]!);
+    expect(dec.get("immo")!).toBeLessThan(dec.get("x")!);
+  });
+
+  it("régresseurs colinéaires refusés, comme en Python", () => {
+    const y = Array.from({ length: 24 }, (_, i) => i / 2300);
+    expect(() => estimerTransmission(y, new Array<number>(24).fill(0.001), 0)).toThrow(/colinéaires/);
+    const x = Array.from({ length: 40 }, (_, i) => 0.002 * Math.cos(0.7 * i));
+    expect(() => estimerTransmission(x, x, 2)).toThrow(/colinéaires/);
+  });
+
+  it("au moins une sous-période pour le test de stabilité", () => {
+    expect(() => stabiliteTransmission(new Array<number>(30).fill(0), new Array<number>(30).fill(0), 0, 0)).toThrow();
   });
 });

@@ -32,6 +32,10 @@ describe("saisie des paramètres", () => {
     expect(lireSaisie({ calculer: "1" }).parametres.inclureMarge).toBe(false);
   });
 
+  it("lien partagé sans « calculer » : la case cochée est respectée", () => {
+    expect(lireSaisie({ fondsPropresT1: "2000", inclureMarge: "oui" }).parametres.inclureMarge).toBe(true);
+  });
+
   it.each(["abc", "NaN", "Infinity", "-5", "0", "1e12", "1e3", "0x10", "12,5,3"])(
     "fonds propres invalides refusés : %s",
     (v) => {

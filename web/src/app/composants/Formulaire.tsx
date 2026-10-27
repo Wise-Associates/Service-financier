@@ -11,7 +11,9 @@ export function Formulaire({ saisie }: { saisie: Saisie }) {
           paramètres (lien « valeurs par défaut »), sinon les anciennes saisies resteraient affichées. */}
       <form method="get" action="/" className="formulaire" key={JSON.stringify(saisie)}>
         <div className="champs">
-          {CHAMPS.map((c) => (
+          {CHAMPS.map((c) => {
+            const erreur = saisie.erreursParChamp[c.nom];
+            return (
             <div className="champ" key={c.nom}>
               <label htmlFor={c.nom}>{c.libelle}</label>
               <input
@@ -21,14 +23,21 @@ export function Formulaire({ saisie }: { saisie: Saisie }) {
                 inputMode="decimal"
                 autoComplete="off"
                 defaultValue={saisie.affichage[c.nom]}
-                aria-describedby={`${c.nom}-aide`}
+                aria-describedby={erreur ? `${c.nom}-erreur ${c.nom}-aide` : `${c.nom}-aide`}
+                aria-invalid={erreur ? true : undefined}
                 required
               />
+              {erreur ? (
+                <p className="erreur-champ" id={`${c.nom}-erreur`}>
+                  {erreur}
+                </p>
+              ) : null}
               <p className="aide" id={`${c.nom}-aide`}>
                 {c.aide}
               </p>
             </div>
-          ))}
+            );
+          })}
         </div>
         <div className="case">
           <input id={NOM_MARGE} name={NOM_MARGE} type="checkbox" value="oui" defaultChecked={saisie.inclureMarge} />
