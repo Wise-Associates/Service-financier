@@ -5,6 +5,9 @@ Enchaîne les étapes du PDF : import et contrôles C01–C02, calcul (courbes, 
 standardisée et SOT, sensibilités, puis écrit le rapport et le journal dans `sortie/`.
 
 Usage : python exemples/demo_banque_fictive.py [dossier_de_sortie]
+
+`executer` fait tout le calcul sans écrire sur disque : l'interface web (`interface_web.py`)
+l'appelle avec les paramètres saisis par l'utilisateur.
 """
 
 from __future__ import annotations
@@ -50,9 +53,24 @@ from irrbb.standardise import (
 )
 
 DATE_ARRETE = date(2026, 9, 30)
-FONDS_PROPRES_T1 = 1_200.0
-# Le PDF impose de choisir explicitement le traitement des marges commerciales (p. 11).
-INCLURE_MARGE = False
+# Horodatage figé du journal pour que deux exécutions de la démonstration donnent le même fichier.
+HORODATAGE_DEMO = datetime(2026, 10, 27, 9, 0)
+
+
+@dataclass(frozen=True)
+class Parametres:
+    """Paramètres de la démonstration que l'utilisateur peut faire varier.
+
+    Fonds propres fictifs. Seuils SOT (15 % du Tier 1 pour ΔEVE, 5 % pour ΔNII) et pondération des
+    gains à 50 % : RTS UE 2024/856 et BCBS d368, à confirmer (PDF p. 15). Le PDF impose de choisir
+    explicitement le traitement des marges commerciales (p. 11).
+    """
+
+    fonds_propres_t1: float = 1_200.0
+    inclure_marge: bool = False
+    seuil_sot_eve: float = 0.15
+    seuil_sot_nii: float = 0.05
+    poids_gains: float = 0.5
 
 
 def marches() -> dict[str, MarcheDevise]:
@@ -141,13 +159,34 @@ class Sensibilites:
     base_euribor: float
 
 
+@dataclass(frozen=True)
+class Resultats:
+    eve: ResultatMesure
+    nii: ResultatMesure
+    std: ResultatStandardise
+    sot_eve: ResultatSOT
+    sot_nii: ResultatSOT
+    sens: Sensibilites
+    gaps: Gaps
+    journal: list[EntreeJournal]
+    versions: dict[str, object]
+    trace: str
+
+
+@dataclass(frozen=True)
+class CalculBloque:
+    """Une anomalie bloquante à l'import a arrêté la chaîne avant le calcul (PDF p. 7)."""
+
+    journal: list[EntreeJournal]
+
+
 def fmt(x: float) -> str:
     return f"{x:,.1f}".replace(",", " ")
 
 
-def main(sortie: Path) -> int:
-    sortie.mkdir(parents=True, exist_ok=True)
-    ctx = Contexte(DATE_ARRETE.isoformat(), datetime(2026, 10, 27, 9, 0), "equipe.production")
+def executer(params: Parametres, maintenant: datetime) -> Resultats | CalculBloque:
+    """Enchaîne import, contrôles, calculs et sensibilités sur le bilan fictif, sans écrire sur disque."""
+    ctx = Contexte(DATE_ARRETE.isoformat(), maintenant, "equipe.production")
     journal: list[EntreeJournal] = []
     m = marches()
     pos = portefeuille()
@@ -160,18 +199,23 @@ def main(sortie: Path) -> int:
     journal += controle_doublons([str(e["identifiant"]) for e in source], ctx)
     journal += controle_perimetre([str(e["identifiant"]) for e in source], [p.identifiant for p in pos], ctx)
     if bloquants(journal):
-        print("Calcul bloqué par une anomalie d'import ; voir le journal.")
-        ecrire_journal(journal, sortie)
-        return 1
+        return CalculBloque(journal)
 
     # 2. Calcul
-    eve = calculer_delta_eve(pos, m, CHOCS_BALE, inclure_marge=INCLURE_MARGE)
+    eve = calculer_delta_eve(pos, m, CHOCS_BALE, inclure_marge=params.inclure_marge)
     nii = calculer_delta_nii(pos, m, CHOCS_BALE)
-    std = calculer_delta_eve_standardise(pos, m, CHOCS_BALE, inclure_marge=INCLURE_MARGE, poids_gains=0.5)
-    sot_eve = controle_valeurs_aberrantes(
-        {s: std.delta_agrege(s) for s in std.delta_par_scenario_devise}, FONDS_PROPRES_T1, 0.15, "ΔEVE standardisé"
+    std = calculer_delta_eve_standardise(
+        pos, m, CHOCS_BALE, inclure_marge=params.inclure_marge, poids_gains=params.poids_gains
     )
-    sot_nii = controle_valeurs_aberrantes({s: nii.delta(s) for s in nii.scenarios}, FONDS_PROPRES_T1, 0.05, "ΔNII")
+    sot_eve = controle_valeurs_aberrantes(
+        {s: std.delta_agrege(s) for s in std.delta_par_scenario_devise},
+        params.fonds_propres_t1,
+        params.seuil_sot_eve,
+        "ΔEVE standardisé",
+    )
+    sot_nii = controle_valeurs_aberrantes(
+        {s: nii.delta(s) for s in nii.scenarios}, params.fonds_propres_t1, params.seuil_sot_nii, "ΔNII"
+    )
 
     # 3. Contrôles de calcul : C04 rapprochement, C05 conservation, C06 hypothèses, C07 variation, C08 signes
     totaux_source: dict[str, float] = {}
@@ -221,26 +265,36 @@ def main(sortie: Path) -> int:
     # 4. Sensibilités et explication
     eur = m["EUR"]
     sens = Sensibilites(
-        pv01(pos, eur, inclure_marge=INCLURE_MARGE),
-        pv01(pos, m["USD"], inclure_marge=INCLURE_MARGE),
-        krd(pos, eur, [0.25, 1, 2, 5, 10, 20], inclure_marge=INCLURE_MARGE),
-        delta_pv_risque_base(pos, eur, "EURIBOR3M", 0.0010, inclure_marge=INCLURE_MARGE),
+        pv01(pos, eur, inclure_marge=params.inclure_marge),
+        pv01(pos, m["USD"], inclure_marge=params.inclure_marge),
+        krd(pos, eur, [0.25, 1, 2, 5, 10, 20], inclure_marge=params.inclure_marge),
+        delta_pv_risque_base(pos, eur, "EURIBOR3M", 0.0010, inclure_marge=params.inclure_marge),
     )
     gaps = gaps_repricing(pos, eur)
 
     versions = {
         "moteur": __version__,
-        "inclure_marge": INCLURE_MARGE,
+        "inclure_marge": params.inclure_marge,
         "chocs": "BCBS d368 (paramètres)",
         "plancher": "RTS UE 2024/856 (paramètres)",
         "arrete": DATE_ARRETE.isoformat(),
     }
     trace = empreinte({"source": source, "versions": versions})
-    ecrire_journal(journal, sortie)
-    ecrire_rapport(sortie, eve, nii, std, sot_eve, sot_nii, sens, gaps, journal, versions, trace)
+    return Resultats(eve, nii, std, sot_eve, sot_nii, sens, gaps, journal, versions, trace)
+
+
+def main(sortie: Path) -> int:
+    sortie.mkdir(parents=True, exist_ok=True)
+    r = executer(Parametres(), HORODATAGE_DEMO)
+    ecrire_journal(r.journal, sortie)
+    if isinstance(r, CalculBloque):
+        print("Calcul bloqué par une anomalie d'import ; voir le journal.")
+        return 1
+    ecrire_rapport(sortie, r)
+    pire, perte = r.eve.perte_maximale()
     print(f"Rapport : {sortie / 'rapport_irrbb.md'}")
-    print(f"Pire scénario ΔEVE : {pire} ({fmt(-perte)}) ; SOT ΔEVE {sot_eve.ratio:.1%} du Tier 1")
-    return 0 if not bloquants(journal) else 1
+    print(f"Pire scénario ΔEVE : {pire} ({fmt(-perte)}) ; SOT ΔEVE {r.sot_eve.ratio:.1%} du Tier 1")
+    return 0 if not bloquants(r.journal) else 1
 
 
 def ecrire_journal(journal: list[EntreeJournal], sortie: Path) -> None:
@@ -251,19 +305,9 @@ def ecrire_journal(journal: list[EntreeJournal], sortie: Path) -> None:
         w.writerows(lignes)
 
 
-def ecrire_rapport(
-    sortie: Path,
-    eve: ResultatMesure,
-    nii: ResultatMesure,
-    std: ResultatStandardise,
-    sot_eve: ResultatSOT,
-    sot_nii: ResultatSOT,
-    sens: Sensibilites,
-    gaps: Gaps,
-    journal: list[EntreeJournal],
-    versions: dict[str, object],
-    trace: str,
-) -> None:
+def ecrire_rapport(sortie: Path, res: Resultats) -> None:
+    eve, nii, std, sot_eve, sot_nii = res.eve, res.nii, res.std, res.sot_eve, res.sot_nii
+    sens, gaps, journal, versions, trace = res.sens, res.gaps, res.journal, res.versions, res.trace
     lignes: list[str] = [
         "# Rapport IRRBB — banque fictive",
         "",

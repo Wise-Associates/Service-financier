@@ -29,6 +29,7 @@ python -m pip install -e .
 | Lint et format | `python -m ruff check .` puis `python -m ruff format --check .` |
 | Typage strict | `python -m mypy` |
 | Démonstration sur une banque fictive | `python exemples/demo_banque_fictive.py` (écrit `sortie/rapport_irrbb.md` et `sortie/journal_controles.csv`) |
+| Interface web locale (banque fictive) | `python exemples/interface_web.py` puis ouvrir <http://127.0.0.1:8000> (`--port` pour changer de port) |
 
 La CI GitHub Actions (`.github/workflows/ci.yml`) exécute ces commandes sous Linux et Windows.
 
@@ -47,6 +48,17 @@ La CI GitHub Actions (`.github/workflows/ci.yml`) exécute ces commandes sous Li
 | `irrbb.controles` | Contrôles C01 à C09, sévérités, journal minimum, approbation à quatre yeux, empreinte de reproductibilité | p. 3–8 |
 
 La correspondance formule → fonction → test est dans [`docs/formules.md`](docs/formules.md).
+
+## Interface web
+
+`python exemples/interface_web.py` démarre une page locale (http://127.0.0.1:8000) qui relance le calcul
+de la banque fictive avec vos paramètres : fonds propres Tier 1, seuils SOT ΔEVE et ΔNII, pondération
+des gains, marges commerciales incluses ou non. Elle affiche ΔEVE et ΔNII par choc et par devise, le
+ΔEVE standardisé, le test des valeurs aberrantes et le statut des contrôles C01 à C09 avec le journal.
+
+Bibliothèque standard uniquement, aucun JavaScript, écoute sur 127.0.0.1 seulement : c'est un outil de
+poste de travail, pas un service à exposer (ADR [0003](docs/adr/0003-interface-web-locale-sans-dependance.md)).
+Le calcul vient de `executer` dans `exemples/demo_banque_fictive.py`, partagé avec la démonstration.
 
 ## Exemple minimal
 

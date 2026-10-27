@@ -19,3 +19,4 @@ seconde implémentation indépendante et un rejeu sur des arrêtés déjà valid
 | 10 | Hors-bilan : simple facteur de conversion sur l'encours | Tirage dans le temps non modélisé | Fournir un échéancier de tirage comme instrument dédié |
 | 11 | Une seule courbe d'actualisation par devise | Pas de CSA multi-devises | Suffisant pour l'IRRBB (pas de valorisation des collatéraux) |
 | 12 | Approbation (C09) et archivage (C10) : seul le journal est fourni | Le workflow lui-même n'est pas outillé | À intégrer dans l'outil de workflow de l'établissement |
+| 13 | Interface web (`exemples/interface_web.py`) : outil local sans authentification, sur le seul bilan fictif de la démonstration | Pas de saisie de portefeuille réel ni d'usage partagé | **Restriction** : écoute sur 127.0.0.1 uniquement ; tout déploiement réseau exige un nouvel ADR (authentification, journalisation, hébergement) |
