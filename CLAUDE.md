@@ -17,12 +17,15 @@ de modifier le code.
 - Toute limitation connue va dans `docs/limites.md` avec son atténuation.
 - Données fictives uniquement dans les tests et les exemples.
 - Seule dépendance d'exécution : numpy (version figée). Pas de nouvelle dépendance sans ADR.
-- L'interface web (`exemples/interface_web.py`) n'a aucune formule : elle appelle
-  `demo_banque_fictive.executer`. Bibliothèque standard seulement, pas de JavaScript (ADR 0003).
+- `web/` (Next.js) embarque un portage TypeScript du moteur (`web/src/moteur`, ADR 0004). Le moteur
+  Python reste la référence : toute formule modifiée l'est dans les deux moteurs, avec le test porté,
+  puis `python exemples/reference_web.py` régénère la référence de parité. Dépendances npm en
+  versions exactes, ajout seulement avec mise à jour de l'ADR.
 
 ## Vérifications avant de livrer
 
 ```bash
 python -m ruff check . && python -m ruff format --check . && python -m mypy && python -m pytest
 python exemples/demo_banque_fictive.py
+cd web && npm run lint && npm run typecheck && npm test && npm run build
 ```

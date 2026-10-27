@@ -1,4 +1,4 @@
-/* Interface de démonstration IRRBB : feuille unique, sans dépendance externe. */
+/* Interface de démonstration IRRBB : feuille unique, sans police ni ressource externe. */
 :root {
   --fond: #f6f7f9;
   --surface: #ffffff;
@@ -79,7 +79,7 @@ section {
   padding: var(--espace);
   margin: var(--espace) 0;
 }
-section[aria-label="Synthèse"] { background: none; border: none; padding: 0; }
+.synthese { background: none; border: none; padding: 0; }
 
 .champs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px var(--espace); }
 .champ label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
