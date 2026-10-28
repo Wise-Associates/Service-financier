@@ -259,7 +259,7 @@ export class Instrument implements Position {
     let renouvellement: (t: number) => number;
     let periodeRenouvellement: number;
     if (this.index === null) {
-      // `or` Python : une durée nulle retombe aussi sur la maturité.
+      // Une durée nulle retombe aussi sur la maturité.
       const duree = this.dureeRenouvellement || this.maturite;
       renouvellement = (t) => tauxParForward(courbe, t, duree, this.frequence) + this.marge;
       periodeRenouvellement = duree;

@@ -2,7 +2,7 @@
  * Accès sûrs aux objets indexés par des clés fournies par l'appelant (devise, index, catégorie).
  *
  * Un objet JavaScript hérite de `Object.prototype` : `r["constructor"]` ou `"toString" in r`
- * répondent alors à tort. Le moteur Python, avec ses dict, n'a pas ce piège.
+ * répondent alors à tort.
  */
 
 /** Valeur propre de `r` pour la clé `k`, sans remonter la chaîne de prototypes. */

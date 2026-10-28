@@ -215,7 +215,7 @@ function jsonCanonique(v: unknown): string {
 /**
  * C03 : empreinte SHA-256 d'un objet JSON canonique (données, paramètres, version de règles).
  * Les nombres sont écrits à la manière de JavaScript (1200 et non 1200.0) : l'empreinte n'est
- * donc pas comparable à celle du moteur Python, seulement d'un calcul TypeScript à l'autre.
+ * pas comparable à celle de l'ancien moteur Python, seulement d'un calcul à l'autre.
  */
 export function empreinte(objet: unknown): string {
   return createHash("sha256").update(jsonCanonique(objet), "utf8").digest("hex");

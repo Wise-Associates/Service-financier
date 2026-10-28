@@ -1,6 +1,6 @@
 # 0004 — Interface Next.js et portage du moteur en TypeScript
 
-Date : 2026-10-27 · Statut : accepté · Remplace [0003](0003-interface-web-locale-sans-dependance.md)
+Date : 2026-10-27 · Statut : accepté, modifié par [0005](0005-retrait-du-moteur-python.md) (parité) · Remplace [0003](0003-interface-web-locale-sans-dependance.md)
 
 ## Contexte
 
