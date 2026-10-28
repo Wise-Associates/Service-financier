@@ -157,7 +157,7 @@ describe("comportemental", () => {
     expect(dec.get("immo")!).toBeLessThan(dec.get("x")!);
   });
 
-  it("régresseurs colinéaires refusés, comme en Python", () => {
+  it("régresseurs colinéaires refusés", () => {
     const y = Array.from({ length: 24 }, (_, i) => i / 2300);
     expect(() => estimerTransmission(y, new Array<number>(24).fill(0.001), 0)).toThrow(/colinéaires/);
     const x = Array.from({ length: 40 }, (_, i) => 0.002 * Math.cos(0.7 * i));
@@ -166,5 +166,12 @@ describe("comportemental", () => {
 
   it("au moins une sous-période pour le test de stabilité", () => {
     expect(() => stabiliteTransmission(new Array<number>(30).fill(0), new Array<number>(30).fill(0), 0, 0)).toThrow();
+  });
+
+  it("dépôt et prêt refusent un encours non fini", () => {
+    for (const encours of [Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() => depot({ encours })).toThrow(/encours/);
+      expect(() => pret({ encours })).toThrow(/encours/);
+    }
   });
 });

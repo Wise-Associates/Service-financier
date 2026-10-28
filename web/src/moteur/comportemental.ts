@@ -169,7 +169,7 @@ export class DepotNonEcheance implements Position {
     const id = this.identifiant;
     if (!(this.partStable >= 0 && this.partStable <= 1)) throw new Error(`${id} : part stable dans [0 ; 1]`);
     if (!(this.beta >= 0 && this.beta <= 1)) throw new Error(`${id} : β dans [0 ; 1]`);
-    if (!(this.encours > 0)) throw new Error(`${id} : encours strictement positif`);
+    if (!(this.encours > 0 && Number.isFinite(this.encours))) throw new Error(`${id} : encours strictement positif`);
     if (this.tauxServi < this.plancherTauxServi) throw new Error(`${id} : taux servi sous son plancher`);
     Object.freeze(this);
   }
@@ -256,7 +256,7 @@ export class PretRemboursementAnticipe implements Position {
     this.pente = c.pente;
     this.centre = c.centre ?? 0;
     this.categorie = c.categorie ?? "pret_immobilier";
-    if (!(this.encours > 0 && this.maturite > 0)) {
+    if (!(this.encours > 0 && this.maturite > 0 && Number.isFinite(this.encours + this.maturite))) {
       throw new Error(`${this.identifiant} : encours et maturité strictement positifs`);
     }
     Object.freeze(this);
