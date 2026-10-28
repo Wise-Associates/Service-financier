@@ -13,6 +13,7 @@ produire la référence de parité du moteur TypeScript de l'interface (`web/`).
 from __future__ import annotations
 
 import csv
+import io
 import sys
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -402,5 +403,8 @@ def ecrire_rapport(sortie: Path, res: Resultats) -> None:
 
 
 if __name__ == "__main__":
+    # La console Windows (cp1252) ne sait pas afficher « Δ » : on force l'UTF-8 pour la sortie.
+    if isinstance(sys.stdout, io.TextIOWrapper):
+        sys.stdout.reconfigure(encoding="utf-8")
     dossier = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parent.parent / "sortie"
     sys.exit(main(dossier))
