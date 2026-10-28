@@ -1,6 +1,6 @@
 /**
- * Outils numériques élémentaires, alignés sur le comportement de numpy utilisé par le moteur
- * Python de référence (`src/irrbb`) pour que les deux moteurs donnent les mêmes chiffres.
+ * Outils numériques élémentaires, alignés sur le comportement de numpy, qu'utilisait le moteur
+ * Python d'origine : la référence figée de `demo/reference-python.json` en dépend (ADR 0005).
  */
 
 /** Interpolation linéaire avec extrapolation plate, comme `numpy.interp`. */

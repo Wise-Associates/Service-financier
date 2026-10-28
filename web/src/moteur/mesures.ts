@@ -29,7 +29,7 @@ export type ParametresChocs = Readonly<Record<string, ParametresChoc>>;
 /**
  * Valeurs par position, en base et par scénario, avec agrégations et écarts. Des `Map` plutôt que des
  * objets : l'ordre d'insertion est conservé quelle que soit la forme des identifiants (« 10 », « 20 »…),
- * comme les dict Python, et aucune clé ne se heurte aux propriétés héritées des objets.
+ * et aucune clé ne se heurte aux propriétés héritées des objets.
  */
 export class ResultatMesure {
   constructor(

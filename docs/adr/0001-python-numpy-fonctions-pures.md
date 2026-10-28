@@ -1,6 +1,6 @@
 # 0001 — Python, numpy seul, fonctions pures
 
-Date : 2026-10-27 · Statut : accepté
+Date : 2026-10-27 · Statut : remplacé par [0005](0005-retrait-du-moteur-python.md)
 
 ## Contexte
 

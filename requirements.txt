@@ -1,3 +1,0 @@
-# Versions figées pour reproduire les calculs à l'identique (PDF p. 8 : reproduire le calcul
-# à partir de l'arrêté et de la version des composants).
-numpy==2.5.3

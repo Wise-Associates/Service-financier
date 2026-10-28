@@ -48,6 +48,7 @@ describe("courbes", () => {
 
   it("bootstrap : refuse des maturités non consécutives", () => {
     expect(() => bootstrapSwaps([1, 2, 5], [0.02, 0.02, 0.02])).toThrow();
+    expect(() => bootstrapSwaps([1.9, 2.2], [0.02, 0.02])).toThrow();
   });
 
   it("plancher : le taux observé sert de plancher s'il est plus bas", () => {
@@ -59,5 +60,6 @@ describe("courbes", () => {
 
   it("refuse des maturités non croissantes", () => {
     expect(() => new CourbeZero([2, 1], [0.01, 0.02])).toThrow();
+    expect(() => new CourbeZero([1, Number.NaN], [0.01, 0.02])).toThrow();
   });
 });

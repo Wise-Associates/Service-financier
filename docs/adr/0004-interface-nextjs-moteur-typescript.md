@@ -1,6 +1,6 @@
 # 0004 — Interface Next.js et portage du moteur en TypeScript
 
-Date : 2026-10-27 · Statut : accepté · Remplace [0003](0003-interface-web-locale-sans-dependance.md)
+Date : 2026-10-27 · Statut : accepté, modifié par [0005](0005-retrait-du-moteur-python.md) (parité) · Remplace [0003](0003-interface-web-locale-sans-dependance.md)
 
 ## Contexte
 
@@ -47,4 +47,5 @@ processus à lancer et à déployer.
   chaîne de prototypes (`moteur/cles.ts`) et les résultats par position sont des `Map`, pour garder
   la sémantique des dict Python (ordre d'insertion, aucune clé réservée).
 - Toujours un outil de poste de travail sur données fictives : pas d'authentification. Un
-  déploiement (Vercel ou autre) exige un nouvel ADR (authentification, journalisation, données).
+  déploiement (Vercel ou autre) exige un nouvel ADR (authentification, journalisation, données) :
+  voir [0006](0006-deploiement-vercel.md).

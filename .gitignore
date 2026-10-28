@@ -1,12 +1,1 @@
-__pycache__/
-*.pyc
-.venv/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-*.egg-info/
-build/
-dist/
-# Sorties de la démonstration (rapport, journal) : régénérées à chaque exécution
-sortie/
 .env*

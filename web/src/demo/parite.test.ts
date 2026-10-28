@@ -1,9 +1,11 @@
 /**
- * Parité avec le moteur Python de référence sur la banque fictive.
+ * Non-régression contre les résultats figés de l'ancien moteur Python (ADR 0005).
  *
- * `reference-python.json` est produit par `python exemples/reference_web.py` ; un test Python
- * vérifie qu'il reste à jour. Écart toléré : 1e-9 en relatif (ordre des sommes, exp/log de la
- * plateforme), bien en dessous de la précision affichée (0,1 M).
+ * `reference-python.json` a été produit par le moteur Python (numpy) dont ce moteur est le portage,
+ * avant son retrait (dernière version : commit a531f7b). Il n'est plus régénéré. Écart toléré :
+ * 1e-9 en relatif (ordre des sommes, exp/log de la plateforme), bien en dessous de la précision
+ * affichée (0,1 M). Une modification volontaire de formule qui déplace ces valeurs met à jour les
+ * valeurs concernées et justifie l'écart dans le commit.
  */
 
 import { describe, expect, it } from "vitest";
@@ -32,12 +34,12 @@ function comparerDict(
   chemin: string,
 ): void {
   const o = obtenu instanceof Map ? obtenu : new Map(Object.entries(obtenu));
-  // Même ordre que le moteur Python (ordre d'insertion), pas seulement mêmes clés.
+  // Même ordre que la référence (ordre d'insertion), pas seulement mêmes clés.
   expect([...o.keys()], chemin).toEqual(Object.keys(attendu));
   for (const [k, v] of Object.entries(attendu)) proche(o.get(k)!, v, `${chemin}/${k}`);
 }
 
-describe.each(Object.entries(reference.demo))("parité avec le moteur Python (%s)", (_, ref) => {
+describe.each(Object.entries(reference.demo))("référence figée du moteur Python (%s)", (_, ref) => {
   const r = executer(ref.parametres, "2026-10-27T09:00:00") as Resultats;
 
   it("le calcul n'est pas bloqué", () => {
@@ -90,7 +92,7 @@ describe.each(Object.entries(reference.demo))("parité avec le moteur Python (%s
 });
 
 /** Chemins que la banque fictive n'emprunte pas : mêmes entrées que `cas_unitaires` dans reference_web.py. */
-describe("parité avec le moteur Python (cas unitaires)", () => {
+describe("référence figée du moteur Python (cas unitaires)", () => {
   const ref = reference.unitaires;
   const annuelle = new CourbeZero([1, 5, 10], [0.02, 0.025, 0.03], "annuelle");
   const simple = new CourbeZero([0.5, 2], [0.03, 0.032], "simple");

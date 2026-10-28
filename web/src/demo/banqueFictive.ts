@@ -1,9 +1,8 @@
 /**
  * Démonstration de bout en bout sur un bilan FICTIF (montants en millions d'euros/dollars).
  *
- * Portage de `exemples/demo_banque_fictive.py` : import et contrôles C01–C02, calcul (courbes,
- * chocs, ΔEVE, ΔNII, comportemental, options), contrôles de calcul (C04 à C08), approche
- * standardisée et SOT, sensibilités. Aucune I/O : la page appelle `executer` à chaque requête.
+ * Import et contrôles C01–C02, calcul (courbes, chocs, ΔEVE, ΔNII, comportemental, options),
+ * contrôles de calcul (C04 à C08), approche standardisée et SOT, sensibilités. Aucune I/O : la page appelle `executer` à chaque requête.
  */
 
 import { DepotNonEcheance, PretRemboursementAnticipe } from "@/moteur/comportemental";
