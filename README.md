@@ -65,6 +65,13 @@ devise, le ΔEVE standardisé, le test des valeurs aberrantes et le statut des c
 le journal. Le calcul tourne côté serveur (Server Component), sans API ni server action
 (ADR [0004](docs/adr/0004-interface-nextjs-moteur-typescript.md)).
 
+## Déploiement (Vercel)
+
+Le déploiement passe par l'intégration Git de Vercel (ADR [0006](docs/adr/0006-deploiement-vercel.md)) :
+importer le dépôt dans Vercel avec **`web` comme dossier racine** (Root Directory) ; le préréglage
+Next.js et les commandes par défaut suffisent, aucune variable d'environnement n'est nécessaire.
+Chaque push publie ensuite une préversion. L'accès se règle dans Settings → Deployment Protection.
+
 ## Exemple minimal
 
 ```ts
@@ -114,3 +121,4 @@ arrêtés validés restent nécessaires.
 - [0003 — Interface web locale, sans nouvelle dépendance](docs/adr/0003-interface-web-locale-sans-dependance.md) (remplacé par 0004)
 - [0004 — Interface Next.js et portage du moteur en TypeScript](docs/adr/0004-interface-nextjs-moteur-typescript.md)
 - [0005 — Retrait du moteur Python, le moteur TypeScript devient la référence](docs/adr/0005-retrait-du-moteur-python.md)
+- [0006 — Déploiement de l'interface sur Vercel](docs/adr/0006-deploiement-vercel.md)

@@ -47,4 +47,5 @@ processus à lancer et à déployer.
   chaîne de prototypes (`moteur/cles.ts`) et les résultats par position sont des `Map`, pour garder
   la sémantique des dict Python (ordre d'insertion, aucune clé réservée).
 - Toujours un outil de poste de travail sur données fictives : pas d'authentification. Un
-  déploiement (Vercel ou autre) exige un nouvel ADR (authentification, journalisation, données).
+  déploiement (Vercel ou autre) exige un nouvel ADR (authentification, journalisation, données) :
+  voir [0006](0006-deploiement-vercel.md).
